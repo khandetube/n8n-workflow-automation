@@ -35,6 +35,8 @@ assert.ok(workflow.connections['Schedule Every 15 Minutes']?.main?.[0]?.some(edg
 
 assert.ok(html.includes('Content-Security-Policy'), 'Dashboard must define a browser-side Content Security Policy');
 assert.ok(html.includes("script-src 'self'") && html.includes("style-src 'self'"), 'CSP must disallow inline scripts and styles');
+assert.ok(!html.includes("'unsafe-inline'"), 'CSP must not allow unsafe inline execution');
+assert.ok(html.includes('name="referrer" content="no-referrer"'), 'Dashboard should not send referrer details to third parties');
 assert.ok(html.includes('Permissions-Policy'), 'Dashboard must restrict unused browser permissions');
 assert.ok(!html.includes('<style>') && !html.includes('<script>'), 'No inline CSS or JavaScript should remain');
 assert.ok(!/\son[a-z]+=/i.test(html), 'No inline event handlers should remain');
