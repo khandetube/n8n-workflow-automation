@@ -58,7 +58,7 @@ Values are examples only; live values vary.
 - [ ] Add error workflow and alerting before production deployment.
 
 ## Security and operational notes
-- The static dashboard uses a browser-side Content Security Policy to limit network destinations, plus a restrictive Permissions Policy and `no-referrer` policy. GitHub Pages does not let this project configure arbitrary HTTP response headers; for stronger enforcement, serve it behind a host that supports response headers and move inline JavaScript/CSS into separate files.
+- The static dashboard uses a strict browser-side Content Security Policy with external JavaScript/CSS, an allowlist for market-data endpoints and coin icons, plus `no-referrer` and a restrictive Permissions Policy. GitHub Pages does not let this project configure arbitrary HTTP response headers; a host that supports response headers can enforce these policies more strongly.
 - The dashboard is read-only: it does not connect wallets, request exchange credentials, or place trades.
 - The n8n workflow is exported as inactive and must be imported and manually tested in an actual n8n instance before activation. The GitHub validation job checks JSON structure and static references, not live n8n execution.
 
