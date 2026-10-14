@@ -41,24 +41,39 @@ function setStatus(text,good){$('statusText').textContent=text;$('statusDot').st
 function saveWatch(){try{localStorage.setItem('pulse-watchlist',JSON.stringify(Array.from(watch)))}catch(e){}}
 async function getJson(url){const c=new AbortController(),t=setTimeout(()=>c.abort(),10000);try{const r=await fetch(url,{signal:c.signal,cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
 async function loadMarkets(){
-const request=++marketRequest;const btn=$('refreshBtn');btn.disabled=true;btn.textContent='↻ Loading';$('errorBox').style.display='none';setStatus('Fetching live quotes…',false);
+const request=++marketRequest,btn=$('refreshBtn');
+btn.disabled=true;btn.textContent='↻ Loading';$('errorBox').style.display='none';setStatus('Fetching live quotes…',false);
+try{
+let fresh=[],feed='Binance';
 try{
 const symbols=encodeURIComponent(JSON.stringify(SYMBOLS));
 const data=await getJson('https://api.binance.com/api/v3/ticker/24hr?symbols='+symbols);
-const fresh=data.map(d=>({pair:d.symbol,...META[d.symbol],price:Number(d.lastPrice),change:Number(d.priceChangePercent),high:Number(d.highPrice),low:Number(d.lowPrice),volume:Number(d.quoteVolume),bid:Number(d.bidPrice),ask:Number(d.askPrice)})).filter(d=>META[d.pair]&&Number.isFinite(d.price));
-if(request!==marketRequest)return;markets=fresh;
-if(!markets.length)throw new Error('Exchange returned no usable market records.');
-lastFeed='Binance';
+fresh=data.map(d=>({pair:d.symbol,...META[d.symbol],price:Number(d.lastPrice),change:Number(d.priceChangePercent),high:Number(d.highPrice),low:Number(d.lowPrice),volume:Number(d.quoteVolume),bid:Number(d.bidPrice),ask:Number(d.askPrice)})).filter(d=>META[d.pair]&&Number.isFinite(d.price));
+if(!fresh.length)throw new Error('Exchange returned no usable market records.');
 }catch(primary){
-try{
 const ids=SYMBOLS.map(s=>META[s].id).join(',');
 const fallback=await getJson('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids='+ids+'&order=market_cap_desc&per_page=20&page=1&sparkline=false');
-const fresh=fallback.map(d=>{const pair=SYMBOLS.find(s=>META[s].id===d.id);return {pair,...META[pair],price:Number(d.current_price),change:Number(d.price_change_percentage_24h||0),high:Number(d.high_24h),low:Number(d.low_24h),volume:Number(d.total_volume),bid:NaN,ask:NaN}}).filter(d=>d.pair&&Number.isFinite(d.price));if(request!==marketRequest)return;markets=fresh;lastFeed='CoinGecko fallback';
-if(!markets.length)throw primary;
-}catch(e){if(request!==marketRequest)return;$('errorBox').textContent='Unable to retrieve market data from the primary exchange or fallback API. This can happen due to regional restrictions, network filtering, or rate limits. Details: '+(e.message||'request failed');$('errorBox').style.display='block';setStatus('Market feed unavailable',false);if(!markets.length)$('marketRows').innerHTML='<tr><td colspan="6" class="empty">Live data unavailable. Check your connection and press Refresh to retry.</td></tr>';return;
+fresh=fallback.map(d=>{const pair=SYMBOLS.find(s=>META[s].id===d.id);return pair?{pair,...META[pair],price:Number(d.current_price),change:Number(d.price_change_percentage_24h??0),high:Number(d.high_24h),low:Number(d.low_24h),volume:Number(d.total_volume),bid:NaN,ask:NaN}:null}).filter(d=>d&&Number.isFinite(d.price));
+if(!fresh.length)throw new Error('Both market-data providers failed or returned no usable records. Primary: '+(primary.message||'unknown error'));
+feed='CoinGecko fallback';
 }
 if(request!==marketRequest)return;
-markets.sort((a,b)=>b.volume-a.volume);$('trackedMetric').textContent=String(markets.length);const up=markets.filter(x=>x.change>=0).length,down=markets.length-up;$('breadthMetric').textContent=up+' / '+down;$('breadthNote').textContent='Gainers / decliners';const top=markets.slice().sort((a,b)=>b.change-a.change)[0];$('topMoverMetric').textContent=top?top.symbol+' '+signed(top.change):'—';$('topMoverMetric').className='metric-value '+(top&&top.change>=0?'up':'down');$('topMoverNote').textContent='Best 24-hour performer';$('volumeMetric').textContent='$'+compact(markets.reduce((sum,x)=>sum+x.volume,0));$('lastUpdate').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});setStatus('Connected · '+lastFeed,true);renderTable();renderWatch();updateSelected();
+markets=fresh;lastFeed=feed;markets.sort((a,b)=>b.volume-a.volume);
+$('trackedMetric').textContent=String(markets.length);
+const up=markets.filter(x=>x.change>=0).length,down=markets.length-up;
+$('breadthMetric').textContent=up+' / '+down;$('breadthNote').textContent='Gainers / decliners';
+const top=markets.slice().sort((a,b)=>b.change-a.change)[0];
+$('topMoverMetric').textContent=top?top.symbol+' '+signed(top.change):'—';
+$('topMoverMetric').className='metric-value '+(top&&top.change>=0?'up':'down');
+$('topMoverNote').textContent='Best 24-hour performer';
+$('volumeMetric').textContent='$'+compact(markets.reduce((sum,x)=>sum+x.volume,0));
+$('lastUpdate').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+setStatus('Connected · '+lastFeed,true);renderTable();renderWatch();updateSelected();
+}catch(e){
+if(request!==marketRequest)return;
+$('errorBox').textContent='Unable to retrieve market data from the primary exchange or fallback API. This can happen due to regional restrictions, network filtering, or rate limits. Details: '+(e.message||'request failed');
+$('errorBox').style.display='block';setStatus('Market feed unavailable',false);
+if(!markets.length)$('marketRows').innerHTML='<tr><td colspan="6" class="empty">Live data unavailable. Check your connection and press Refresh to retry.</td></tr>';
 }finally{if(request===marketRequest){btn.disabled=false;btn.textContent='↻ Refresh'}}
 }
 function filtered(){let a=markets.slice();const q=$('search').value.trim().toLowerCase();if(q)a=a.filter(x=>x.name.toLowerCase().includes(q)||x.symbol.toLowerCase().includes(q));if(filter==='up')a=a.filter(x=>x.change>=0);if(filter==='down')a=a.filter(x=>x.change<0);if(filter==='watch')a=a.filter(x=>watch.has(x.pair));const sort=$('sort').value;if(sort==='change')a.sort((x,y)=>y.change-x.change);else if(sort==='price')a.sort((x,y)=>y.price-x.price);else if(sort==='name')a.sort((x,y)=>x.name.localeCompare(y.name));else a.sort((x,y)=>y.volume-x.volume);return a}
