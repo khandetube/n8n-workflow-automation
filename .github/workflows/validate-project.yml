@@ -27,3 +27,15 @@ jobs:
           node-version: 24
       - name: Validate dashboard and workflow
         run: node scripts/validate-project.mjs
+
+  api-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check live market data providers
+        run: node scripts/smoke-test-apis.mjs
