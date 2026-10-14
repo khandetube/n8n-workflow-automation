@@ -19,8 +19,8 @@ A portfolio-ready n8n automation example demonstrating API ingestion, data norma
 1. **Manual Trigger** — run on demand while testing.
 2. **Schedule Every 15 Minutes** — periodically starts the workflow after activation; keep it inactive during initial import/testing if you do not want scheduled API requests.
 3. **Fetch Market Data** — requests market data for Bitcoin, Ethereum, and Solana from CoinGecko's public API.
-3. **Normalize & Validate** — maps the response into a consistent schema and validates key fields.
-4. **Build Summary** — creates a concise report with timestamp and normalized assets.
+4. **Normalize & Validate** — maps the response into a consistent schema and validates key fields.
+5. **Build Summary** — creates a concise report with timestamp and normalized assets.
 
 ## Import
 1. Open your n8n instance.
