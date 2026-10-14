@@ -1,0 +1,71 @@
+{
+  "name": "Crypto Market Snapshot Automation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/coins/markets",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "vs_currency", "value": "usd" },
+            { "name": "ids", "value": "bitcoin,ethereum,solana" },
+            { "name": "price_change_percentage", "value": "24h" }
+          ]
+        },
+        "options": { "timeout": 15000 }
+      },
+      "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0002",
+      "name": "Fetch Market Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().flatMap(item => Array.isArray(item.json) ? item.json : [item.json]);\nconst retrievedAt = new Date().toISOString();\nconst normalized = rows.map((coin) => {\n  const asset = String(coin.id ?? '').trim().toLowerCase();\n  const price = Number(coin.current_price);\n  const marketCap = Number(coin.market_cap);\n  const change = coin.price_change_percentage_24h == null ? null : Number(coin.price_change_percentage_24h);\n  if (!asset || !Number.isFinite(price) || price < 0) return null;\n  return {\n    asset,\n    symbol: String(coin.symbol ?? '').toUpperCase(),\n    name: String(coin.name ?? asset),\n    price_usd: price,\n    market_cap_usd: Number.isFinite(marketCap) ? marketCap : null,\n    change_24h_percent: Number.isFinite(change) ? change : null,\n    retrieved_at: retrievedAt\n  };\n}).filter(Boolean);\nif (normalized.length === 0) throw new Error('No valid market records returned by the API. Check the HTTP response and API availability.');\nreturn normalized.map(record => ({ json: record }));"
+      },
+      "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0003",
+      "name": "Normalize & Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const records = $input.all().map(item => item.json);\nconst lines = records.map(r => `${r.name} (${r.symbol}): $${r.price_usd.toLocaleString('en-US', { maximumFractionDigits: 6 })} | 24h: ${r.change_24h_percent == null ? 'N/A' : `${r.change_24h_percent.toFixed(2)}%`}`);\nreturn [{ json: { title: 'Crypto Market Snapshot', retrieved_at: new Date().toISOString(), asset_count: records.length, assets: records, summary: lines.join('\\n') } }];"
+      },
+      "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0004",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Fetch Market Data", "type": "main", "index": 0 }]]
+    },
+    "Fetch Market Data": {
+      "main": [[{ "node": "Normalize & Validate", "type": "main", "index": 0 }]]
+    },
+    "Normalize & Validate": {
+      "main": [[{ "node": "Build Summary", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "versionId": "b2d6c180-14a4-4f19-a83c-6b3fba6a0005",
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}
