@@ -2,12 +2,35 @@
   "name": "Crypto Market Snapshot Automation",
   "nodes": [
     {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0006",
+      "name": "Schedule Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        500
+      ]
+    },
+    {
       "parameters": {},
       "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0001",
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -15,18 +38,32 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "vs_currency", "value": "usd" },
-            { "name": "ids", "value": "bitcoin,ethereum,solana" },
-            { "name": "price_change_percentage", "value": "24h" }
+            {
+              "name": "vs_currency",
+              "value": "usd"
+            },
+            {
+              "name": "ids",
+              "value": "bitcoin,ethereum,solana"
+            },
+            {
+              "name": "price_change_percentage",
+              "value": "24h"
+            }
           ]
         },
-        "options": { "timeout": 15000 }
+        "options": {
+          "timeout": 15000
+        }
       },
       "id": "a2d6c180-14a4-4f19-a83c-6b3fba6a0002",
       "name": "Fetch Market Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [480, 300],
+      "position": [
+        480,
+        300
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 1000
@@ -39,7 +76,10 @@
       "name": "Normalize & Validate",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [740, 300]
+      "position": [
+        740,
+        300
+      ]
     },
     {
       "parameters": {
@@ -49,23 +89,68 @@
       "name": "Build Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1000, 300]
+      "position": [
+        1000,
+        300
+      ]
     }
   ],
   "connections": {
     "Manual Trigger": {
-      "main": [[{ "node": "Fetch Market Data", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Market Data": {
-      "main": [[{ "node": "Normalize & Validate", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Normalize & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Normalize & Validate": {
-      "main": [[{ "node": "Build Summary", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
-  "settings": { "executionOrder": "v1", "saveManualExecutions": true },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
   "versionId": "b2d6c180-14a4-4f19-a83c-6b3fba6a0005",
-  "meta": { "templateCredsSetupCompleted": true },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
   "tags": []
 }
