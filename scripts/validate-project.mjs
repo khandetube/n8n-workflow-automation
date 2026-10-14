@@ -30,4 +30,8 @@ for (const node of workflow.nodes) {
 }
 assert.ok(nodeNames.has('Fetch Market Data'), 'n8n workflow must fetch API data');
 assert.ok(nodeNames.has('Normalize & Validate'), 'n8n workflow must validate and normalize data');
+assert.ok(nodeNames.has('Schedule Every 15 Minutes'), 'n8n workflow must include the scheduled trigger');
+assert.ok(workflow.connections['Schedule Every 15 Minutes']?.main?.[0]?.some(edge => edge.node === 'Fetch Market Data'), 'Scheduled trigger must connect to the market-data request');
+assert.ok(html.includes('Content-Security-Policy'), 'Dashboard must define a browser-side Content Security Policy');
+assert.ok(html.includes('Permissions-Policy'), 'Dashboard must restrict unused browser permissions');
 console.log('Validation passed: dashboard JavaScript syntax, referenced DOM IDs, market pairs, and n8n workflow JSON/connections.');
